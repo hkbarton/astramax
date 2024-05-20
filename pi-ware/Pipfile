@@ -5,10 +5,9 @@ name = "pypi"
 
 [packages]
 numpy = "*"
-picamera2 = "*"
 google-cloud-aiplatform = "*"
 
 [dev-packages]
 
 [requires]
-python_version = "3.10"
+python_version = "3"

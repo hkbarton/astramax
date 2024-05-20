@@ -1,0 +1,16 @@
+**/node_modules
+
+.next
+
+.DS_Store
+.env
+.env.**
+!.env.example
+
+npm-debug.log*
+
+**/*.pyc
+**/__pycache__/
+**/.cache/
+**/.pytest_cache/
+**/*.egg-info/
