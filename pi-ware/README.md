@@ -1,0 +1,9 @@
+Prepare on PI(assuming Python and Pip already installed):
+
+```
+// install libcamera and related library
+sudo apt install -y python3-libcamera python3-kms++
+sudo apt install -y python3-prctl libatlas-base-dev ffmpeg libopenjp2-7 python3-pip
+// install pipenv on PI
+pip install --user pipenv --break-system-packages
+```
