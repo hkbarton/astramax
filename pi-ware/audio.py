@@ -21,7 +21,6 @@ class MicrophoneStream:
     def __init__(self, rate, chunk):
         self._rate = rate
         self._chunk = chunk
-
         # Create a thread-safe buffer of audio data
         self._buff = queue.Queue()
         self._closed = True
@@ -58,7 +57,6 @@ class MicrophoneStream:
             if chunk is None:
                 return
             data = [chunk]
-
             # Now consume whatever other data's still buffered
             while True:
                 try:
@@ -68,11 +66,10 @@ class MicrophoneStream:
                     data.append(chunk)
                 except queue.Empty:
                     break
-
             yield b''.join(data)
 
 
-def detect_trigger_word():
+def detect_trigger_word(trigger_word, callback):
     client = speech.SpeechClient()
     config = speech.RecognitionConfig(
         encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
@@ -94,17 +91,9 @@ def detect_trigger_word():
         for response in responses:
             if not response.results:
                 continue
-
             result = response.results[0]
             if not result.alternatives:
                 continue
-
             transcript = result.alternatives[0].transcript
-            print(f"Transcript: {transcript}")
-            if "hi gemini" in transcript.lower():
-                print("Trigger word detected!")
-
-
-# Example usage
-if __name__ == "__main__":
-    detect_trigger_word()
+            if trigger_word.lower() in transcript.lower():
+                callback()
