@@ -1,14 +1,7 @@
-import os
 import pyaudio
+import time
 import queue
 from google.cloud import speech
-
-# Set up authentication
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.join(
-    os.path.dirname(os.path.abspath(
-        __file__)),
-    "../deployment/dev/credentials/ghack-service-account.json"
-)
 
 # Audio recording parameters
 RATE = 44100
@@ -69,31 +62,61 @@ class MicrophoneStream:
             yield b''.join(data)
 
 
-def detect_trigger_word(trigger_word, callback):
-    client = speech.SpeechClient()
-    config = speech.RecognitionConfig(
-        encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
-        sample_rate_hertz=RATE,
-        language_code="en-US",
-    )
-    streaming_config = speech.StreamingRecognitionConfig(
-        config=config,
-        interim_results=True,
-    )
+class SpeechRecorder:
+    def __init__(self):
+        self.client = speech.SpeechClient()
+        config = speech.RecognitionConfig(
+            encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
+            sample_rate_hertz=RATE,
+            language_code="en-US",
+        )
+        self.streaming_config = speech.StreamingRecognitionConfig(
+            config=config,
+            interim_results=True,
+        )
+        pass
 
-    with MicrophoneStream(RATE, CHUNK) as stream:
-        audio_generator = stream.generator()
-        requests = (speech.StreamingRecognizeRequest(audio_content=content)
-                    for content in audio_generator)
+    def detect_trigger_word(self, trigger_word, callback):
+        with MicrophoneStream(RATE, CHUNK) as stream:
+            audio_generator = stream.generator()
+            requests = (speech.StreamingRecognizeRequest(audio_content=content)
+                        for content in audio_generator)
+            responses = self.client.streaming_recognize(
+                self.streaming_config, requests)
 
-        responses = client.streaming_recognize(streaming_config, requests)
+            for response in responses:
+                if not response.results:
+                    continue
+                result = response.results[0]
+                if not result.alternatives:
+                    continue
+                transcript = result.alternatives[0].transcript
+                if trigger_word.lower() in transcript.lower():
+                    callback()
+                    break
 
-        for response in responses:
-            if not response.results:
-                continue
-            result = response.results[0]
-            if not result.alternatives:
-                continue
-            transcript = result.alternatives[0].transcript
-            if trigger_word.lower() in transcript.lower():
-                callback()
+    def record_until_silence(self, callback, silence_threshold=2):
+        recorded_text = []
+        with MicrophoneStream(RATE, CHUNK) as stream:
+            audio_generator = stream.generator()
+            requests = (speech.StreamingRecognizeRequest(audio_content=content)
+                        for content in audio_generator)
+            responses = self.client.streaming_recognize(
+                self.streaming_config, requests)
+
+            last_spoken_time = time.time()
+
+            for response in responses:
+                if not response.results:
+                    continue
+                result = response.results[0]
+                if not result.alternatives:
+                    continue
+                transcript = result.alternatives[0].transcript
+                if transcript.strip():
+                    last_spoken_time = time.time()
+                    recorded_text.append(transcript)
+                else:
+                    if time.time() - last_spoken_time > silence_threshold:
+                        break
+            callback(' '.join(recorded_text))
