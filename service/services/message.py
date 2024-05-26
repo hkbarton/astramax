@@ -1,10 +1,26 @@
 from models import Message
 from utils import Database, generate_unique_id
-from sqlalchemy import select, insert
+from sqlalchemy import select, insert, update
 from schemas import Message as MessageSchema
 
 
 class MessageService:
+    @staticmethod
+    async def get_next_unprocessed_message(processor_id: str) -> Message | None:
+        query = select(Message).where(
+            Message.processed_by.is_(None)
+        ).order_by(Message.created_at.desc())
+        result = await Database.get_db().fetch_one(query)
+        if result:
+            message = Message(**result)
+            # TODO transaction
+            update_statement = update(Message).where(
+                Message.id == message.id).values(processed_by=processor_id)
+            await Database.get_db().execute(update_statement)
+            message.processed_by = processor_id
+            return message
+        return None
+
     @staticmethod
     async def get_message_by_id(msg_id: str) -> Message | None:
         query = select(Message).where(

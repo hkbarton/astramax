@@ -1,7 +1,10 @@
-from fastapi import FastAPI
+import time
+import asyncio
+from fastapi import FastAPI, HTTPException
 from services import MessageService
 from schemas import Message as MessageSchema
 from utils import Database
+from fastapi.responses import StreamingResponse
 from contextlib import asynccontextmanager
 
 
@@ -15,14 +18,34 @@ app = FastAPI(lifespan=lifespan)
 
 
 @app.get("/api/message")
-async def get_last_unprocessed_message(by: str) -> MessageSchema:
-    return MessageService.get_message_by_id(by)
+async def get_last_unprocessed_message(processor_id: str) -> MessageSchema:
+    message = await MessageService.get_next_unprocessed_message(processor_id)
+    if message is None:
+        raise HTTPException(status_code=404, detail="Not exist")
+    return message
 
 
 @app.post("/api/message")
 async def create_message(msg: MessageSchema) -> MessageSchema:
-    created_msg = await MessageService.create_message(msg)
-    return created_msg
+    return await MessageService.create_message(msg)
+
+
+async def event_stream(processor_id: str):
+    try:
+        while True:
+            next_message = await MessageService.get_next_unprocessed_message(processor_id)
+            if next_message is not None:
+                data = MessageSchema.from_orm(next_message).json()
+                yield f"data: {data}\n\n"
+            # await asyncio.sleep(0.5)
+    except GeneratorExit:
+        print("client disconnect")
+        return
+
+
+@app.get("/api/message-stream")
+async def get_events(processor_id: str):
+    return StreamingResponse(event_stream(processor_id), media_type="text/event-stream")
 
 if __name__ == "__main__":
     import uvicorn
