@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Determine the directory where the script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+
+# Path to the Docker Compose file relative to the script's location
+COMPOSE_FILE="${SCRIPT_DIR}/../dev/compose.yml"
+
+start_services() {
+    echo "Starting astramax services..."
+    docker compose -f "$COMPOSE_FILE" up -d
+}
+
+stop_services() {
+    echo "Stopping astramax services..."
+    docker compose -f "$COMPOSE_FILE" down
+    docker container prune -f
+}
+
+# Check the first command-line argument
+case "$1" in
+    start)
+        start_services
+        ;;
+    stop)
+        stop_services
+        ;;
+    *)
+        echo "Usage: $0 {start|stop}"
+        exit 1
+        ;;
+esac

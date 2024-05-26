@@ -1,0 +1,15 @@
+services:
+  db:
+    image: "postgres:16.2-alpine"
+    ports:
+      - "5432:5432"
+    volumes:
+      - maindb-data:/var/lib/postgresql/data
+      - ../scripts/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${MAINDB_USER}
+      POSTGRES_PASSWORD: ${MAINDB_PASSWORD}
+
+volumes:
+  maindb-data:
