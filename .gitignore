@@ -18,3 +18,5 @@ npm-debug.log*
 **/*.egg-info/
 
 **/*.h264
+
+**/dist

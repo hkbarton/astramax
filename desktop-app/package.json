@@ -1,0 +1,22 @@
+{
+  "name": "astramax-app",
+  "version": "1.0.0",
+  "description": "desktop app for astramax",
+  "scripts": {
+    "start": "tsc && electron .",
+    "build": "tsc"
+  },
+  "author": "Edwin Huang<edwinhuang@google.com>",
+  "license": "ISC",
+  "dependencies": {
+    "clipboardy": "^4.0.0",
+    "electron": "^30.0.8",
+    "node-fetch": "^3.3.2",
+    "robotjs": "^0.6.0"
+  },
+  "devDependencies": {
+    "@types/electron": "^1.6.10",
+    "@types/node": "^20.12.12",
+    "typescript": "^5.4.5"
+  }
+}
