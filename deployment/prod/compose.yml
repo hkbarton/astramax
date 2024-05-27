@@ -1,0 +1,34 @@
+services:
+  db:
+    image: "postgres:16.2-alpine"
+    ports:
+      - "5432:5432"
+    volumes:
+      - maindb-data:/var/lib/postgresql/data
+      - ../scripts/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${MAINDB_USER}
+      POSTGRES_PASSWORD: ${MAINDB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${MAINDB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  service:
+    build:
+      context: ../../service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      ENV: prod
+      DATABASE_URL: ${MAINDB_ADDR} # postgresql://${MAINDB_USER}:${MAINDB_PASSWORD}@db:5432/astramax
+
+volumes:
+  maindb-data:

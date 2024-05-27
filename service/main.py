@@ -1,9 +1,8 @@
-import time
 import asyncio
 from fastapi import FastAPI, HTTPException
 from services import MessageService
 from schemas import Message as MessageSchema
-from utils import Database
+from utils import Database, get_env, Env
 from fastapi.responses import StreamingResponse
 from contextlib import asynccontextmanager
 
@@ -49,4 +48,5 @@ async def get_events(processor_id: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="0.0.0.0" if get_env() ==
+                Env.PROD else "127.0.0.1", port=8000)

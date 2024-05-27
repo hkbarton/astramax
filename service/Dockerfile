@@ -1,4 +1,8 @@
-FROM python:3.10-alpine
+FROM python:3.12-alpine
 WORKDIR /service
+# Install pipenv
+RUN pip install --no-cache-dir pipenv
 COPY . .
-CMD ["python3", "main.py"]
+# Install dependencies using pipenv
+RUN pipenv install --deploy --ignore-pipfile
+CMD ["pipenv", "run", "python", "main.py"]
