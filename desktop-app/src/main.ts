@@ -1,13 +1,13 @@
 import { app, Tray, Menu } from "electron";
 import * as path from "path";
 import * as robot from "robotjs";
-import fetch from "node-fetch";
-import { Readable } from "stream";
+
+const EventSource = require("eventsource");
 
 let tray: Tray | null = null;
 
 function createTray() {
-  tray = new Tray(path.join(__dirname, "icon.png"));
+  tray = new Tray(path.join(__dirname, "icon-16.png"));
   const contextMenu = Menu.buildFromTemplate([
     {
       label: "Exit",
@@ -21,24 +21,22 @@ function createTray() {
 }
 
 async function listenToEventStream() {
-  const response = await fetch("http://your-event-stream-endpoint");
-  const reader = response.body as Readable;
+  const eventSource = new EventSource(
+    "http://127.0.0.1:8000/api/message-stream?processor_id=desktop-app"
+  );
 
-  reader.on("data", (chunk: Buffer) => {
-    const text = chunk.toString();
-    // Insert text at the current cursor position
-    for (const char of text) {
+  eventSource.onmessage = async (event: any) => {
+    const { payload } = JSON.parse(event.data);
+    console.log("got payload:", payload);
+    for (const char of payload) {
       robot.typeString(char);
     }
-  });
+  };
 
-  reader.on("end", () => {
-    console.log("Stream ended");
-  });
-
-  reader.on("error", (err) => {
-    console.error("Stream error:", err);
-  });
+  eventSource.onerror = (err: any) => {
+    console.error("EventSource error:", err);
+    eventSource.close();
+  };
 }
 
 app.whenReady().then(() => {

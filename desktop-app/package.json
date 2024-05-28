@@ -2,21 +2,35 @@
   "name": "astramax-app",
   "version": "1.0.0",
   "description": "desktop app for astramax",
+  "main": "dist/main.js",
   "scripts": {
-    "start": "tsc && electron .",
-    "build": "tsc"
+    "start": "tsc && cp src/*.png dist/ && electron .",
+    "build": "tsc",
+    "postinstall": "electron-rebuild",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "com.astramax.desktopapp",
+    "mac": {
+      "category": "public.app-category.utilities"
+    }
   },
   "author": "Edwin Huang<edwinhuang@google.com>",
   "license": "ISC",
   "dependencies": {
     "clipboardy": "^4.0.0",
-    "electron": "^30.0.8",
-    "node-fetch": "^3.3.2",
+    "eventsource": "^2.0.2",
+    "node-fetch": "^2.7.0",
     "robotjs": "^0.6.0"
   },
   "devDependencies": {
     "@types/electron": "^1.6.10",
+    "@types/eventsource": "^1.1.15",
     "@types/node": "^20.12.12",
+    "electron": "^30.0.8",
+    "electron-builder": "^24.13.3",
+    "electron-rebuild": "^3.2.9",
     "typescript": "^5.4.5"
   }
 }
