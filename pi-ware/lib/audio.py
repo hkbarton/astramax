@@ -1,6 +1,9 @@
 import pyaudio
 import time
 import queue
+import numpy as np
+import threading
+from typing import TypedDict
 from google.cloud import speech
 
 # Audio recording parameters
@@ -9,15 +12,23 @@ CHUNK = int(RATE / 10)  # 100ms
 DEVICE_INDEX = 1
 
 
+class RecorderSignals(TypedDict):
+    triggered: threading.Event
+    finished: threading.Event
+
+
 class MicrophoneStream:
     """Opens a recording stream as a generator yielding the audio chunks."""
 
-    def __init__(self, rate, chunk):
+    def __init__(self, rate, chunk, silence_threshold=500, stop_after=None):
         self._rate = rate
         self._chunk = chunk
         # Create a thread-safe buffer of audio data
         self._buff = queue.Queue()
         self._closed = True
+        self._silence_threshold = silence_threshold
+        self._silence_start_time = None
+        self._stop_after = stop_after
 
     def __enter__(self):
         self._audio_interface = pyaudio.PyAudio()
@@ -44,7 +55,20 @@ class MicrophoneStream:
     def _fill_buffer(self, in_data, frame_count, time_info, status_flags):
         """Continuously collect data from the audio stream, into the buffer."""
         self._buff.put(in_data)
+        self._check_silence(in_data)
         return None, pyaudio.paContinue
+
+    def _check_silence(self, data):
+        audio_data = np.frombuffer(data, dtype=np.int16)
+        audio_level = np.abs(audio_data).mean()
+        if audio_level < self._silence_threshold:
+            if self._silence_start_time is None:
+                self._silence_start_time = time.time()
+        else:
+            self._silence_start_time = None
+
+    def set_stop_after(self, stop_after):
+        self._stop_after = stop_after
 
     def generator(self):
         while not self._closed:
@@ -52,7 +76,6 @@ class MicrophoneStream:
             if chunk is None:
                 return
             data = [chunk]
-            # Now consume whatever other data's still buffered
             while True:
                 try:
                     chunk = self._buff.get(block=False)
@@ -62,6 +85,8 @@ class MicrophoneStream:
                 except queue.Empty:
                     break
             yield b''.join(data)
+            if self._stop_after and self._silence_start_time and time.time() - self._silence_start_time > self._stop_after:
+                break
 
 
 class SpeechRecorder:
@@ -78,7 +103,8 @@ class SpeechRecorder:
         )
         pass
 
-    def detect_trigger_word(self, trigger_word, callback):
+    def record_after_trigger_word(self, trigger_word, callback, signals: RecorderSignals):
+        recorded_text = ""
         with MicrophoneStream(RATE, CHUNK) as stream:
             audio_generator = stream.generator()
             requests = (speech.StreamingRecognizeRequest(audio_content=content)
@@ -94,31 +120,8 @@ class SpeechRecorder:
                     continue
                 transcript = result.alternatives[0].transcript
                 if trigger_word.lower() in transcript.lower():
-                    callback()
-                    break
-
-    def record_until_silence(self, callback, silence_threshold=2):
-        recorded_text = []
-        with MicrophoneStream(RATE, CHUNK) as stream:
-            audio_generator = stream.generator()
-            requests = (speech.StreamingRecognizeRequest(audio_content=content)
-                        for content in audio_generator)
-            responses = self.client.streaming_recognize(
-                self.streaming_config, requests)
-
-            last_spoken_time = time.time()
-
-            for response in responses:
-                if not response.results:
-                    continue
-                result = response.results[0]
-                if not result.alternatives:
-                    continue
-                transcript = result.alternatives[0].transcript
-                if transcript.strip():
-                    last_spoken_time = time.time()
-                    recorded_text.append(transcript)
-                else:
-                    if time.time() - last_spoken_time > silence_threshold:
-                        break
-            callback(' '.join(recorded_text))
+                    signals["triggered"].set()
+                    recorded_text = transcript.strip()
+                    stream.set_stop_after(2)
+        callback(recorded_text)
+        signals["finished"].set()
