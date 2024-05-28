@@ -29,7 +29,7 @@ async function listenToEventStream() {
     const { payload } = JSON.parse(event.data);
     console.log("got payload:", payload);
     for (const char of payload) {
-      robot.typeString(char);
+      robot.keyTap(char);
     }
   };
 

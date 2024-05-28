@@ -7,11 +7,18 @@
     "start": "tsc && cp src/*.png dist/ && electron .",
     "build": "tsc",
     "postinstall": "electron-rebuild",
-    "pack": "electron-builder --dir",
-    "dist": "electron-builder"
+    "pack": "tsc && electron-builder --dir",
+    "dist": "tsc && electron-builder"
   },
   "build": {
     "appId": "com.astramax.desktopapp",
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "files": [
+      "dist/**/*"
+    ],
     "mac": {
       "category": "public.app-category.utilities"
     }
@@ -31,6 +38,12 @@
     "electron": "^30.0.8",
     "electron-builder": "^24.13.3",
     "electron-rebuild": "^3.2.9",
+    "node-abi": "^3.62.0",
     "typescript": "^5.4.5"
+  },
+  "overrides": {
+    "electron-rebuild": {
+      "node-abi": "3.62.0"
+    }
   }
 }
