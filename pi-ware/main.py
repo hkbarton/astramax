@@ -1,7 +1,7 @@
 import time
 import os
 import threading
-from .audio import SpeechRecorder
+from lib import SpeechRecorder
 from picamera2 import Picamera2
 from picamera2.encoders import H264Encoder, Quality
 from libcamera import controls, Transform

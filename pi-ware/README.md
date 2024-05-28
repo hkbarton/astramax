@@ -4,7 +4,7 @@
 // install libcamera, pyaudio and related library
 sudo apt install -y python3-libcamera python3-kms++ libcap-dev
 sudo apt install -y python3-prctl libatlas-base-dev ffmpeg libopenjp2-7 python3-pip
-sudo apt-get install libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0 ffmpeg libatlas-base-dev python3-pyaudio
+sudo apt install -y libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0 libatlas-base-dev python3-pyaudio
 
 // install python lib, note we don't use pipenv for pi-ware
 pip3 install picamera2 numpy google-cloud-aiplatform google-cloud-speech --break-system-packages

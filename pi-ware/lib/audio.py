@@ -6,6 +6,7 @@ from google.cloud import speech
 # Audio recording parameters
 RATE = 44100
 CHUNK = int(RATE / 10)  # 100ms
+DEVICE_INDEX = 1
 
 
 class MicrophoneStream:
@@ -25,6 +26,7 @@ class MicrophoneStream:
             channels=1,
             rate=self._rate,
             input=True,
+            input_device_index=DEVICE_INDEX,
             frames_per_buffer=self._chunk,
             stream_callback=self._fill_buffer,
         )
