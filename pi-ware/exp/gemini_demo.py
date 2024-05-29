@@ -1,17 +1,28 @@
 import requests
 import json
-import subprocess
+import os
+from lib import get_var
+from google.auth import default
+from google.auth.transport.requests import Request
+from google.oauth2 import service_account
+
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.join(
+    os.path.dirname(os.path.abspath(
+        __file__)),
+    "../deployment/dev/credentials/ghack-service-account.json"
+)
 
 
 def get_access_token():
-    result = subprocess.run(
-        ["gcloud", "auth", "application-default", "print-access-token"], stdout=subprocess.PIPE)
-    return result.stdout.decode('utf-8').strip()
+    SCOPES = ['https://www.googleapis.com/auth/cloud-platform']
+    credentials = service_account.Credentials.from_service_account_file(
+        '../../deployment/dev/credentials/ghack-service-account.json', scopes=SCOPES)
+    credentials.refresh(Request())
+    return credentials.token
 
 
 def generate_content(project_id, model_id):
-    url = f"https://us-central1-aiplatform.googleapis.com/v1/projects/{
-        project_id}/locations/us-central1/publishers/google/models/{model_id}:streamGenerateContent"
+    url = f"https://us-central1-aiplatform.googleapis.com/v1/projects/{project_id}/locations/us-central1/publishers/google/models/{model_id}:streamGenerateContent"
     token = get_access_token()
 
     headers = {
@@ -26,7 +37,7 @@ def generate_content(project_id, model_id):
                 {
                     "fileData": {
                         "mimeType": "video/mp4",
-                        "fileUri": "gs://ghack2024/yosemite.mp4"
+                        "fileUri": f"gs://{get_var('GCS_BUCKET_NAME')}/yosemite.mp4"
                     }
                 },
                 {

@@ -2,7 +2,8 @@ import time
 import os
 import threading
 import queue
-from lib import SpeechRecorder, RecorderSignals, generate_unique_uuid
+import subprocess
+from lib import SpeechRecorder, RecorderSignals, generate_unique_uuid, CloudService
 from picamera2 import Picamera2
 from picamera2.encoders import H264Encoder, Quality
 from libcamera import controls, Transform
@@ -18,13 +19,23 @@ def record_after_trigger_word(recorder: SpeechRecorder, signals: RecorderSignals
 
 
 def capture_video():
-    video_file_name = f'{generate_unique_uuid()}.h264'
+    video_id = generate_unique_uuid()
+    video_file_name = f'{video_id}.h264'
+    output_file = f'{video_id}.mp4'
     encoder = H264Encoder()
     picam2.start_recording(
         encoder, video_file_name, quality=Quality.VERY_HIGH)
     time.sleep(3)
     picam2.stop_recording()
-    recorded_video_file.put(video_file_name)
+    # convert to mp4
+    command = [
+        'ffmpeg',
+        '-i', video_file_name,
+        '-c:v', 'copy',
+        output_file
+    ]
+    subprocess.run(command, check=True)
+    recorded_video_file.put(output_file)
 
 
 def capture_speech(text):
@@ -34,15 +45,15 @@ def capture_speech(text):
 def process_recording():
     prompt = recorded_text.get()
     video_file = recorded_video_file.get()
-    print("========================")
-    print("========================")
-    print("========================")
-    print(prompt)
-    print("\n")
-    print(video_file)
-    print("========================")
-    print("========================")
-    print("========================")
+    CloudService.upload_to_gcs(video_file, video_file)
+    gemini_response = CloudService.generate_content(prompt, video_file)
+    print("=====================")
+    print("=====================")
+    print("=====================")
+    print(gemini_response)
+    print("=====================")
+    print("=====================")
+    print("=====================")
 
 
 if __name__ == "__main__":
