@@ -27,7 +27,7 @@ class CloudService {
     prompt: string,
     videoFileName?: string
   ): Promise<string> {
-    const url = `https://us-central1-aiplatform.googleapis.com/v1/projects/${process.env.PROJECT_ID}/locations/us-central1/publishers/google/models/gemini-1.5-flash-001:streamGenerateContent`;
+    const url = `https://us-central1-aiplatform.googleapis.com/v1/projects/${process.env.PROJECT_ID}/locations/us-central1/publishers/google/models/gemini-1.5-flash-preview-0514:streamGenerateContent`;
     const token = await CloudService.getAccessToken();
     const headers = {
       Authorization: `Bearer ${token}`,
@@ -44,7 +44,7 @@ class CloudService {
         ],
       },
       generationConfig: {
-        temperature: 0.3,
+        temperature: 0.5,
       },
     };
     if (videoFileName) {
@@ -92,6 +92,29 @@ class CloudService {
       },
       audioConfig: {
         audioEncoding: "LINEAR16",
+      },
+    };
+
+    const response = await axios.post(url, data, { headers });
+    return response.data;
+  }
+
+  public static async generateImage(prompt: string) {
+    const url = `https://us-central1-aiplatform.googleapis.com/v1/projects/${process.env.PROJECT_ID}/locations/us-central1/publishers/google/models/imagegeneration@006:predict`;
+    const token = await CloudService.getAccessToken();
+    const headers = {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    };
+
+    const data = {
+      instances: [
+        {
+          prompt,
+        },
+      ],
+      parameters: {
+        sampleCount: 1,
       },
     };
 

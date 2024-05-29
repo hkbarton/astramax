@@ -4,11 +4,11 @@
   "description": "desktop app for astramax",
   "main": "dist/main.js",
   "scripts": {
-    "start": "tsc && cp src/*.png dist/ && cp src/*.wav dist/ && NODE_ENV=development electron .",
+    "start": "tsc && cp src/osx-copy-image dist/ && cp src/*.png dist/ &&  NODE_ENV=development electron .",
     "build": "tsc",
     "postinstall": "electron-rebuild",
     "pack": "tsc && electron-builder --dir",
-    "dist": "rm -rf dist/** && cp src/*.png dist/ && cp src/*.wav dist/ && cp ../deployment/dev/.env dist/ && cp ../deployment/dev/credentials/ghack-service-account.json dist/ && tsc && NODE_ENV=production electron-builder"
+    "dist": "rm -rf dist/** && cp src/osx-copy-image dist/ && cp src/*.png dist/ && cp ../deployment/dev/.env dist/ && cp ../deployment/dev/credentials/ghack-service-account.json dist/ && tsc && NODE_ENV=production electron-builder"
   },
   "build": {
     "appId": "com.astramax.desktopapp",
@@ -19,8 +19,10 @@
     "files": [
       "dist/**/*",
       "dist/.env",
-      "dist/*.json",
-      "dist/*.wav"
+      "dist/*.json"
+    ],
+    "asarUnpack": [
+      "dist/osx-copy-image"
     ],
     "mac": {
       "category": "public.app-category.utilities"

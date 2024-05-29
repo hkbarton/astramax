@@ -3,24 +3,29 @@ import * as path from "path";
 import * as robot from "robotjs";
 import CloudService from "./gcp";
 import { extractTextAndCode } from "./utils";
+const { exec } = require("child_process");
 const EventSource = require("eventsource");
 const player = require("node-wav-player");
 const { decode } = require("base64-arraybuffer");
 
 const fs = require("fs");
 const os = require("os");
-const logFile = fs.createWriteStream(
-  path.join(os.homedir(), "astramax-desktop.log"),
-  { flags: "a" }
-);
-const log = (msg: any, err: any) => {
-  logFile.write(`${new Date().toISOString()} - ${msg} - ${err}\n`);
-};
-
 const isDev = process.env.NODE_ENV === "development";
 require("dotenv").config({
   path: path.resolve(__dirname, isDev ? "../../deployment/dev/.env" : ".env"),
 });
+let log = console.log;
+if (!isDev) {
+  const logFile = fs.createWriteStream(
+    path.join(os.homedir(), "astramax-desktop.log"),
+    { flags: "a" }
+  );
+  log = (msg: any, obj?: any) => {
+    logFile.write(
+      `${new Date().toISOString()} - ${msg} - ${JSON.stringify(obj, null, 2)}\n`
+    );
+  };
+}
 
 let tray: Tray | null = null;
 
@@ -36,7 +41,7 @@ function createTray() {
     {
       label: `service at: ${process.env.SERVICE_URL}`,
       click: () => {
-        // some test code here
+        copyImg(path.resolve(os.homedir(), "Downloads", "test.png"));
       },
     },
   ]);
@@ -44,12 +49,27 @@ function createTray() {
   tray.setContextMenu(contextMenu);
 }
 
+function copyImg(img: Buffer | string) {
+  let filePath: string;
+  if (Buffer.isBuffer(img)) {
+    filePath = path.join("/tmp", "astramax-temp-image.png");
+    fs.writeFileSync(filePath, img);
+  } else {
+    filePath = img;
+  }
+  let execPath = path.resolve(__dirname, "osx-copy-image");
+  if (!isDev) {
+    execPath = execPath.replace("app.asar", "app.asar.unpacked");
+  }
+  exec(`${execPath} ${filePath}`);
+}
+
 async function playTextAsVoice(text: string) {
   const voiceData = await CloudService.generateVoice(text);
   const audioBuffer = decode(voiceData.audioContent);
-  const filePath = path.join(__dirname, "temp.wav");
+  const filePath = path.join("/tmp", "astramax-temp.wav");
   fs.writeFileSync(filePath, Buffer.from(audioBuffer));
-  player.play({ path: path.resolve(__dirname, "temp.wav") });
+  player.play({ path: filePath });
 }
 
 async function listenToEventStream() {
@@ -69,6 +89,7 @@ async function listenToEventStream() {
       }
       return;
     }
+    log("get pi message", payloadObj);
     const generationJobs = [];
     // classify query
     generationJobs.push(
@@ -89,17 +110,39 @@ the question is: ${payloadObj.user_query}
       CloudService.generateContent(payloadObj.user_query, payloadObj.video)
     );
     const [category, oriResult] = await Promise.all(generationJobs);
-    console.log(payloadObj.user_query);
-    console.log(category);
-    console.log(oriResult);
+    log("query category:", category);
+    log("original gemini response:", oriResult);
+
     if (category === "CATEGORY_QNA") {
       await playTextAsVoice(oriResult);
     } else if (category === "CATEGORY_IMAGE_GEN") {
-      player.play({ path: path.resolve(__dirname, "fill.wav") });
+      const feedbackSoundJob = playTextAsVoice("sure, give me a moment");
+      const imagePromptGenJob = CloudService.generateContent(
+        `
+Describe what you are seeing here in detail. If the video shows a place, guess where is this place.
+      `,
+        payloadObj.video
+      );
+      const [_, imagePrompt] = await Promise.all([
+        feedbackSoundJob,
+        imagePromptGenJob,
+      ]);
+      log("image gen prompt", imagePrompt);
+      const imageGenResponse = await CloudService.generateImage(
+        `${imagePrompt}, cartoonish style`
+      );
+      if (
+        imageGenResponse.predictions &&
+        imageGenResponse.predictions.length > 0
+      ) {
+        const imageBase64 = imageGenResponse.predictions[0].bytesBase64Encoded;
+        copyImg(Buffer.from(imageBase64, "base64"));
+        robot.keyTap("v", "command");
+      }
     } else if (category === "CATEGORY_CODE_GEN") {
       const { text, code } = extractTextAndCode(oriResult);
-      console.log("text", text);
-      console.log("code", code);
+      log("code gen text:", text);
+      log("code gen code:", code);
       if (text && text.length > 0 && text[0]) {
         playTextAsVoice(text[0]);
       }
@@ -110,7 +153,7 @@ the question is: ${payloadObj.user_query}
   };
 
   eventSource.onerror = (err: any) => {
-    console.error("EventSource error:", err);
+    log("EventSource error:", err);
     eventSource.close();
   };
 }
@@ -128,10 +171,8 @@ app.on("window-all-closed", () => {
 
 process.on("uncaughtException", (error) => {
   log("Uncaught Exception:", error);
-  console.error("Uncaught Exception:", error);
 });
 
 process.on("unhandledRejection", (reason, promise) => {
   log("Unhandled Rejection at:", reason);
-  console.error("Unhandled Rejection at:", promise, "reason:", reason);
 });
