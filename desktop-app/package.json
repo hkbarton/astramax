@@ -4,11 +4,11 @@
   "description": "desktop app for astramax",
   "main": "dist/main.js",
   "scripts": {
-    "start": "tsc && cp src/*.png dist/ && electron .",
+    "start": "tsc && cp src/*.png dist/ && cp src/*.wav dist/ && NODE_ENV=development electron .",
     "build": "tsc",
     "postinstall": "electron-rebuild",
     "pack": "tsc && electron-builder --dir",
-    "dist": "tsc && electron-builder"
+    "dist": "rm -rf dist/** && cp src/*.png dist/ && cp src/*.wav dist/ && cp ../deployment/dev/.env dist/ && cp ../deployment/dev/credentials/ghack-service-account.json dist/ && tsc && NODE_ENV=production electron-builder"
   },
   "build": {
     "appId": "com.astramax.desktopapp",
@@ -17,7 +17,10 @@
       "output": "dist"
     },
     "files": [
-      "dist/**/*"
+      "dist/**/*",
+      "dist/.env",
+      "dist/*.json",
+      "dist/*.wav"
     ],
     "mac": {
       "category": "public.app-category.utilities"
@@ -26,9 +29,14 @@
   "author": "Edwin Huang<edwinhuang@google.com>",
   "license": "ISC",
   "dependencies": {
+    "axios": "^1.7.2",
+    "base64-arraybuffer": "^1.0.2",
     "clipboardy": "^4.0.0",
+    "dotenv": "^16.4.5",
     "eventsource": "^2.0.2",
+    "google-auth-library": "^9.10.0",
     "node-fetch": "^2.7.0",
+    "node-wav-player": "^0.2.0",
     "robotjs": "^0.6.0"
   },
   "devDependencies": {
