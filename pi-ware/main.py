@@ -3,7 +3,8 @@ import os
 import threading
 import queue
 import subprocess
-from lib import SpeechRecorder, RecorderSignals, generate_unique_uuid, CloudService
+import json
+from lib import SpeechRecorder, RecorderSignals, generate_unique_uuid, CloudService, Service
 from picamera2 import Picamera2
 from picamera2.encoders import H264Encoder, Quality
 from libcamera import controls, Transform
@@ -46,14 +47,8 @@ def process_recording():
     prompt = recorded_text.get()
     video_file = recorded_video_file.get()
     CloudService.upload_to_gcs(video_file, video_file)
-    gemini_response = CloudService.generate_content(prompt, video_file)
-    print("=====================")
-    print("=====================")
-    print("=====================")
-    print(gemini_response)
-    print("=====================")
-    print("=====================")
-    print("=====================")
+    Service.post_message(
+        {"payload": json.dumps({"user_query": prompt, "video": video_file})})
 
 
 if __name__ == "__main__":
