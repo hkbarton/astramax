@@ -3,7 +3,7 @@ import * as path from "path";
 import * as robot from "robotjs";
 import CloudService from "./gcp";
 import { extractTextAndCode } from "./utils";
-const { exec } = require("child_process");
+const { execSync } = require("child_process");
 const EventSource = require("eventsource");
 const player = require("node-wav-player");
 const { decode } = require("base64-arraybuffer");
@@ -61,7 +61,7 @@ function copyImg(img: Buffer | string) {
   if (!isDev) {
     execPath = execPath.replace("app.asar", "app.asar.unpacked");
   }
-  exec(`${execPath} ${filePath}`);
+  execSync(`${execPath} ${filePath}`);
 }
 
 async function playTextAsVoice(text: string) {
