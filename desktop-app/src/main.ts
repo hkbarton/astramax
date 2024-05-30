@@ -151,7 +151,7 @@ Describe what you are seeing here in detail. If the video shows a place, guess w
         for (const line of lines) {
           const codeLine = line.trim();
           if (codeLine) {
-            robot.typeString(line);
+            robot.typeString(codeLine);
           }
           robot.keyTap("enter");
         }
