@@ -40,9 +40,7 @@ function createTray() {
     },
     {
       label: `service at: ${process.env.SERVICE_URL}`,
-      click: () => {
-        copyImg(path.resolve(os.homedir(), "Downloads", "test.png"));
-      },
+      click: async () => {},
     },
   ]);
   tray.setToolTip("AstraMax desktop app");
@@ -144,10 +142,20 @@ Describe what you are seeing here in detail. If the video shows a place, guess w
       log("code gen text:", text);
       log("code gen code:", code);
       if (text && text.length > 0 && text[0]) {
-        playTextAsVoice(text[0]);
+        await playTextAsVoice(text[0]);
+      } else {
+        await playTextAsVoice("sure, I can help with that");
       }
       if (code && code.length > 0 && code[0]) {
-        robot.typeString(code[0]);
+        const lines = code[0].split("\n");
+        for (const line of lines) {
+          const codeLine = line.trim();
+          if (codeLine) {
+            robot.typeString(line);
+          }
+          robot.keyTap("enter");
+        }
+        robot.keyTap("s", "cmd");
       }
     }
   };
