@@ -38,6 +38,10 @@ Electron based desktop application
 
 Environment related configuration file(example only, no actual environment files), db script, docker compose file and other scripts to make the development and test easier.
 
+## Demo
+
+I recorded a demo [here](https://youtu.be/qzpQp0Lygjg).
+
 ## Authors
 
 - Ke(Edwin) Huang [@hkbarton](https://x.com/hkbarton1983)
