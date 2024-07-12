@@ -6,7 +6,7 @@ In a nutshell, AstraMax is a glass based personal AI assistant built on top of r
 
 The overall architecture looks like this:
 
-![AstraMax overall architecture](https://lh3.googleusercontent.com/drive-viewer/AKGpihbclnAaku8hmuovERdyKWrm0ALV4K9VQHNMl2KwFd4jV1_rCI6Zr9k8XVkzvz6gxowL2_gDggN29I28j0KHyDrvglIS8_iGIQ=s1600-rw-v1)
+![AstraMax overall architecture](https://github.com/hkbarton/astramax/blob/main/arch.png?raw=true)
 
 It has three major building blocks:
 
